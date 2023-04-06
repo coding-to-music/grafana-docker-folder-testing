@@ -7,13 +7,13 @@ services:
       - 4000:3000
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./dashboards:/etc/grafana/provisioning/dashboards/
-      - ./datasources:/etc/grafana/provisioning/datasources/
-      - ./folders:/etc/grafana/provisioning/folders/
-      # - ./configs/grafana/provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml:ro
-      # - ./configs/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/provisioning-datasources.yaml:ro
-      # - ./dashboards/node-metrics.json:/var/lib/grafana/dashboards/node-metrics.json:ro
-      # - ./dashboards/container-metrics.json:/var/lib/grafana/dashboards/container-metrics.json:ro
+      # - ./dashboards:/etc/grafana/provisioning/dashboards/
+      # - ./datasources:/etc/grafana/provisioning/datasources/
+      # - ./folders:/etc/grafana/provisioning/folders/
+      - ./configs/grafana/provisioning/dashboards.yml:/etc/grafana/provisioning/dashboards/provisioning-dashboards.yaml:ro
+      - ./configs/grafana/provisioning/datasources.yml:/etc/grafana/provisioning/datasources/provisioning-datasources.yaml:ro
+      - ./dashboards/node-metrics.json:/var/lib/grafana/dashboards/node-metrics.json:ro
+      - ./dashboards/container-metrics.json:/var/lib/grafana/dashboards/container-metrics.json:ro
 
     environment:
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
