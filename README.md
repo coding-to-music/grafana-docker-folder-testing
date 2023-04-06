@@ -4,7 +4,13 @@
 
 https://github.com/coding-to-music/grafana-docker-folder-testing
 
-From / By Ruan Bekker 
+
+Using concepts from:
+
+https://github.com/coding-to-music/gpnc-stack-docker-grafana-prometheus-node-exporter-cadvisor
+
+Which is from / By Ruan Bekker https://github.com/ruanbekker/docker-monitoring-stack-gpnc
+
 
 ## Environment variables:
 
