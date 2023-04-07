@@ -4,7 +4,7 @@ services:
   grafana:
     image: grafana/grafana:latest
     ports:
-      - 4000:3000
+      - 3000:3000
     volumes:
       - grafana_data:/var/lib/grafana
       # - ./dashboards:/etc/grafana/provisioning/dashboards/
