@@ -1,12 +1,24 @@
-version: '3'
+version: "3.7"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "1m"
+    max-file: "1"
+    tag: "{{.Name}}"
 
 services:
   grafana:
     image: grafana/grafana:latest
+    depends_on:
+      - prometheus
     ports:
       - 4000:3000
+    networks:
+      - monitoring
+    logging: *default-logging
     volumes:
-      - grafana_data:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
       # - ./dashboards:/etc/grafana/provisioning/dashboards/
       # - ./datasources:/etc/grafana/provisioning/datasources/
       # - ./folders:/etc/grafana/provisioning/folders/
@@ -27,5 +39,94 @@ services:
       - GF_INSTALL_PLUGINS=marcusolsson-static-datasource,golioth-websocket-datasource,volkovlabs-echarts-panel,marcusolsson-json-datasource,yesoreyeram-infinity-datasource
       - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/container-metrics.json
 
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
+    container_name: prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--log.level=error"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.external-url=http://localhost:9090"
+    volumes:
+      - ./configs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./configs/prometheus/recording-rules.yml:/etc/prometheus/recording-rules.yml
+      - ./configs/prometheus/alerting-rules.yml:/etc/prometheus/alerting-rules.yml
+      - prometheus-data:/prometheus
+    depends_on:
+      - alertmanager
+    ports:
+      - 9090:9090
+    networks:
+      - monitoring
+    logging: *default-logging
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:${CADVISOR_VERSION:-latest}
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+        # https://github.com/google/cadvisor/issues/1565#issuecomment-718812180
+      - /var/run/docker.sock:/var/run/docker.sock
+      #- /dev/disk:/dev/disk:ro
+    networks:
+      - monitoring
+    logging: *default-logging
+
+  node-exporter:
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION:-v1.3.1}
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.ignored-mount-points"
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    networks:
+      - monitoring
+    logging: *default-logging
+
+  alertmanager:
+    image: prom/alertmanager:${ALERTMANAGER_VERSION:-latest}
+    container_name: alertmanager
+    command:
+      - "--config.file=/etc/alertmanager/config.yml"
+      - "--log.level=error"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=http://localhost:9093"
+    volumes:
+      - ./configs/alertmanager/alertmanager-fallback-config.yml:/etc/alertmanager/config.yml
+    ports:
+      - 9093:9093
+    networks:
+      - monitoring
+    logging: *default-logging
+
+  # redis:
+  #   image: redis:${REDIS_VERSION:-6}
+  #   container_name: redis
+  #   ports:
+  #     - 6379:6379
+  #   # cpus: 0.5
+  #   # mem_limit: 512m
+  #   logging: *default-logging
+
 volumes:
-  grafana_data:
+  grafana-data: {}
+  prometheus-data: {}
+
+networks:
+  monitoring:
+    name: monitoring
